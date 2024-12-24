@@ -1,8 +1,25 @@
+def calculate_ball_speed(level)
+  base_speed = 5
+  speed_increase = 1.5
+  [base_speed + (level - 1) * speed_increase, 15].min  # Cap at 15
+end
+
+def calculate_paddle_speed(level)
+  base_speed = 8
+  speed_increase = 0.5
+  [base_speed + (level - 1) * speed_increase, 15].min  # Cap at 15
+end
+
 def tick args
   # Initialisierung (nur beim ersten Aufruf)
-  args.state.ball ||= { x: 640, y: 360, w: 20, h: 20, dx: 10, dy: 6 }  # Centered and larger ball
-  args.state.left_paddle ||= { x: 50, y: 340, w: 20, h: 100 }          # Larger paddle, moved from edge
-  args.state.right_paddle ||= { x: 1210, y: 340, w: 20, h: 100 }       # Larger paddle, moved from edge
+  args.state.level ||= 1
+  args.state.points_for_level_up ||= 5
+  args.state.max_level ||= 10
+  
+  initial_speed = calculate_ball_speed(args.state.level)
+  args.state.ball ||= { x: 640, y: 360, w: 20, h: 20, dx: initial_speed, dy: initial_speed * 0.6 }
+  args.state.left_paddle ||= { x: 50, y: 340, w: 20, h: 100 }
+  args.state.right_paddle ||= { x: 1210, y: 340, w: 20, h: 100 }
 
   # Ballbewegung
   args.state.ball.x += args.state.ball.dx
@@ -24,27 +41,31 @@ def tick args
   if args.state.ball.x < 0
     args.state.right_score ||= 0
     args.state.right_score += 1
-    args.state.ball.x = 640                # Reset to center X
-    args.state.ball.y = 360                # Reset to center Y
-  elsif args.state.ball.x + args.state.ball.w > 1280  # Updated width boundary
+    reset_ball_after_point(args)
+  elsif args.state.ball.x + args.state.ball.w > 1280
     args.state.left_score ||= 0
     args.state.left_score += 1
-    args.state.ball.x = 640                # Reset to center X
-    args.state.ball.y = 360                # Reset to center Y
+    reset_ball_after_point(args)
   end
 
+  # Update level based on total score
+  total_score = (args.state.left_score || 0) + (args.state.right_score || 0)
+  args.state.level = [(total_score / args.state.points_for_level_up) + 1, args.state.max_level].min
+
   # Steuerung der Schläger
+  paddle_speed = calculate_paddle_speed(args.state.level)
+  
   # Left paddle control (W and S keys)
   if args.inputs.keyboard.key_held.w
-    args.state.left_paddle.y += 10         # Faster paddle movement
+    args.state.left_paddle.y += paddle_speed
   elsif args.inputs.keyboard.key_held.s
-    args.state.left_paddle.y -= 10         # Faster paddle movement
+    args.state.left_paddle.y -= paddle_speed
   end
 
   if args.inputs.keyboard.key_held.up
-    args.state.right_paddle.y += 10        # Faster paddle movement
+    args.state.right_paddle.y += paddle_speed
   elsif args.inputs.keyboard.key_held.down
-    args.state.right_paddle.y -= 10        # Faster paddle movement
+    args.state.right_paddle.y -= paddle_speed
   end
 
   # Keep paddles within screen bounds
@@ -72,4 +93,22 @@ def tick args
     size_px: 50,                           # Larger text size
     alignment_enum: 1                      # Center aligned
   }
+
+  # Display current level
+  args.outputs.labels << {
+    x: 640,
+    y: 680,
+    text: "Level: #{args.state.level}",
+    size_px: 30,
+    alignment_enum: 1
+  }
+end
+
+def reset_ball_after_point(args)
+  args.state.ball.x = 640
+  args.state.ball.y = 360
+  current_speed = calculate_ball_speed(args.state.level)
+  # Randomize initial direction after point
+  args.state.ball.dx = current_speed * (rand < 0.5 ? 1 : -1)
+  args.state.ball.dy = current_speed * 0.6 * (rand < 0.5 ? 1 : -1)
 end
