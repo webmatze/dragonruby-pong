@@ -34,15 +34,17 @@ def tick args
   end
 
   # Steuerung der Schläger
-  if args.inputs.keyboard.w 
+  # Left paddle control (W and S keys)
+  if args.inputs.keyboard.key_held.w
     args.state.left_paddle.y += 5
-  elsif args.inputs.keyboard.s
+  elsif args.inputs.keyboard.key_held.s
     args.state.left_paddle.y -= 5
   end
 
-  if args.inputs.keyboard.up
+  # Right paddle control (Up and Down arrow keys)
+  if args.inputs.keyboard.key_held.up
     args.state.right_paddle.y += 5
-  elsif args.inputs.keyboard.down
+  elsif args.inputs.keyboard.key_held.down
     args.state.right_paddle.y -= 5
   end
 
