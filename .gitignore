@@ -1,0 +1,5 @@
+builds/
+logs/
+exceptions/
+.aider*
+.env
